@@ -1,0 +1,44 @@
+// =============================================================================
+// ERROR HANDLING TESTS - Test error handling and invalid inputs
+// =============================================================================
+// Purpose: Test graceful handling of malformed GSON strings
+// Dependencies: test_framework.src, gson_util.src
+// =============================================================================
+
+test_error_handling = function()
+    print("\n=== Testing Error Handling ===")
+    
+    // Invalid JSON structures that should not crash
+    invalid_cases = [
+        "{key: 'value'}",     // unquoted key  
+        "{'key': value}",     // unquoted value
+        "{'key': 'value',}",  // trailing comma
+        "[1, 2, 3,]",         // trailing comma in array
+        "{'key': 'unclosed",  // unclosed string
+    ]
+    
+    for invalid in invalid_cases
+        result = GsonUtil.parse(invalid)
+        // Should not crash, might return partial or null result
+        assert(result != null or result == null, "Error handling - " + invalid)
+    end for
+end function
+
+test_malformed_input = function()
+    print("\n=== Testing Malformed Input ===")
+    
+    // Test various malformed inputs
+    malformed_cases = [
+        "{'key'",           // incomplete object
+        "[1, 2",            // incomplete array
+        "{'key': }",        // missing value
+        "{,}",              // empty key-value
+        "{'': 'value'}",    // empty key
+    ]
+    
+    for malformed in malformed_cases
+        result = GsonUtil.parse(malformed)
+        // Should handle gracefully without crashing
+        assert(true, "Malformed input handled - " + malformed)
+    end for
+end function

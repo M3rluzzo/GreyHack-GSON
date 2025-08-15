@@ -1,0 +1,64 @@
+// =============================================================================
+// PERFORMANCE TESTS - Test GSON performance with large datasets
+// =============================================================================
+// Purpose: Test stringify/parse performance with large arrays and objects
+// Dependencies: test_framework.src, gson_util.src
+// =============================================================================
+
+test_performance = function()
+    print("\n=== Testing Performance ===")
+    
+    // Large array test
+    large_array = []
+    for i in range(0, 999)
+        large_array.push({"id": i, "name": "item_" + i, "active": (i % 2 == 0)})
+    end for
+    
+    start_time = time
+    json_str = GsonUtil.stringify(large_array)
+    stringify_time = time - start_time
+    
+    start_time = time
+    parsed = GsonUtil.parse(json_str)
+    parse_time = time - start_time
+    
+    print("Large array (1000 items):")
+    print("  Stringify time: " + stringify_time + "ms")
+    print("  Parse time: " + parse_time + "ms")
+    print("  JSON size: " + json_str.len + " characters")
+    
+    assert(parsed.len == 1000, "Performance test - large array length")
+    
+    if typeof(parsed[0]) == "map" then
+        assert_equals(parsed[0]["name"], "item_0", "Performance test - large array first item")
+        assert_equals(parsed[999]["name"], "item_999", "Performance test - large array last item")
+    else
+        print("  [WARN] Array parsing issue detected")
+    end if
+end function
+
+test_deep_nesting = function()
+    print("\n=== Testing Deep Nesting ===")
+    
+    // Create a deeply nested object
+    deep_obj = {"level": 1}
+    current = deep_obj
+    
+    // Create 10 levels of nesting
+    for i in range(2, 10)
+        current["nested"] = {"level": i}
+        current = current["nested"]
+    end for
+    
+    // Test stringify/parse
+    start_time = time
+    json_str = GsonUtil.stringify(deep_obj)
+    parse_time = time - start_time
+    
+    parsed = GsonUtil.parse(json_str)
+    
+    assert(parsed["level"] == 1, "Deep nesting - root level")
+    assert(parsed["nested"]["level"] == 2, "Deep nesting - second level")
+    
+    print("Deep nesting (10 levels): " + parse_time + "ms")
+end function

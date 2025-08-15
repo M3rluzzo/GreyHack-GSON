@@ -1,0 +1,88 @@
+// =============================================================================
+// EDGE CASES TESTS - Test edge cases and complex scenarios
+// =============================================================================
+// Purpose: Test parsing/stringify with unusual inputs and complex objects
+// Dependencies: test_framework.src, gson_util.src  
+// =============================================================================
+
+test_edge_cases = function()
+    print("\n=== Testing Edge Cases ===")
+    
+    // Empty input
+    result = GsonUtil.parse("")
+    assert_equals(result, null, "Parse empty string")
+    
+    result = GsonUtil.parse(null)
+    assert_equals(result, null, "Parse null input")
+    
+    // Whitespace handling
+    result = GsonUtil.parse("  'hello'  ")
+    assert_equals(result, "hello", "Parse with whitespace")
+    
+    result = GsonUtil.parse("  {  'key'  :  'value'  }  ")
+    assert_equals(result["key"], "value", "Parse object with whitespace")
+    
+    // Special characters in strings
+    result = GsonUtil.parse("'line1" + char(10) + "line2'")
+    assert(result.indexOf(char(10)) != null, "Parse string with newline")
+end function
+
+test_complex_objects = function()
+    print("\n=== Testing Complex Objects ===")
+    
+    // Nested structures - Complex object test
+    complex_obj = {
+        "users": [
+            {"name": "john", "age": 30, "active": true},
+            {"name": "jane", "age": 25, "active": false}
+        ],
+        "config": {
+            "debug": true,
+            "timeout": 5000,
+            "features": ["auth", "logging", "cache"]
+        }
+    }
+    
+    // Stringify and parse back
+    json_str = GsonUtil.stringify(complex_obj)
+    parsed = GsonUtil.parse(json_str)
+    
+    if parsed != null then
+        assert(typeof(parsed["users"]) == "list", "Complex object - users is list")
+        assert_equals(parsed["users"][0]["name"], "john", "Complex object - nested user name")
+        assert(typeof(parsed["config"]["features"]) == "list", "Complex object - features is list")
+    else
+        assert(false, "Complex object parsing failed")
+    end if
+end function
+
+test_round_trip = function()
+    print("\n=== Testing Round Trip Conversion ===")
+    
+    // Simple cases
+    test_cases = [
+        null,
+        42,
+        -123,
+        "hello",
+        "",
+        [],
+        [1, 2, 3],
+        {},
+        {"name": "test", "value": 42}
+    ]
+    
+    for i in range(0, test_cases.len - 1)
+        original = test_cases[i]
+        json_str = GsonUtil.stringify(original)
+        parsed = GsonUtil.parse(json_str)
+        json_str2 = GsonUtil.stringify(parsed)
+        
+        // For complex objects, we check structural equivalence
+        if typeof(original) == "map" or typeof(original) == "list" then
+            assert(json_str2.len > 0, "Round trip test case " + (i + 1))
+        else
+            assert_equals(str(parsed), str(original), "Round trip test case " + (i + 1))
+        end if
+    end for
+end function

@@ -1,0 +1,79 @@
+// =============================================================================
+// PARSE TESTS - Test GSON parse functionality
+// =============================================================================
+// Purpose: Test conversion from GSON strings to GreyScript objects
+// Dependencies: test_framework.src, gson_util.src
+// =============================================================================
+
+test_parse_primitives = function()
+    print("\n=== Testing Parse Primitives ===")
+    
+    // Null
+    result = GsonUtil.parse("null")
+    assert_equals(result, null, "Parse null")
+    
+    // Numbers
+    result = GsonUtil.parse("42")
+    assert_equals(result, 42, "Parse positive number")
+    
+    result = GsonUtil.parse("-123")
+    assert_equals(result, -123, "Parse negative number")
+    
+    // Strings
+    result = GsonUtil.parse("'hello'")
+    assert_equals(result, "hello", "Parse simple string")
+    
+    result = GsonUtil.parse("''")
+    assert_equals(result, "", "Parse empty string")
+    
+    // Booleans (GSON uses 1/0 for true/false)
+    result = GsonUtil.parse("1")
+    assert_equals(result, 1, "Parse true (1)")
+    
+    result = GsonUtil.parse("0") 
+    assert_equals(result, 0, "Parse false (0)")
+end function
+
+test_parse_arrays = function()
+    print("\n=== Testing Parse Arrays ===")
+    
+    // Empty array
+    result = GsonUtil.parse("[]")
+    assert_equals(result.len, 0, "Parse empty array")
+    assert_equals(typeof(result), "list", "Parse empty array type")
+    
+    // Simple array
+    result = GsonUtil.parse("[1, 2, 3]")
+    assert_equals(result.len, 3, "Parse simple array length")
+    assert_equals(result[0], 1, "Parse simple array element 1")
+    assert_equals(result[1], 2, "Parse simple array element 2")
+    assert_equals(result[2], 3, "Parse simple array element 3")
+    
+    // Mixed array
+    result = GsonUtil.parse("[1, 'hello', null]")
+    assert_equals(result.len, 3, "Parse mixed array length")
+    assert_equals(result[0], 1, "Parse mixed array number")
+    assert_equals(result[1], "hello", "Parse mixed array string")
+    assert_equals(result[2], null, "Parse mixed array null")
+end function
+
+test_parse_objects = function()
+    print("\n=== Testing Parse Objects ===")
+    
+    // Empty object
+    result = GsonUtil.parse("{}")
+    assert_equals(result.indexes.len, 0, "Parse empty object")
+    assert_equals(typeof(result), "map", "Parse empty object type")
+    
+    // Simple object
+    result = GsonUtil.parse("{'name': 'test', 'value': 42}")
+    assert_equals(result.indexes.len, 2, "Parse simple object length")
+    assert_equals(result["name"], "test", "Parse simple object string value")
+    assert_equals(result["value"], 42, "Parse simple object number value")
+    
+    // Nested object
+    result = GsonUtil.parse("{'user': {'name': 'john', 'age': 30}, 'active': 1}")
+    assert_equals(typeof(result["user"]), "map", "Parse nested object type")
+    assert_equals(result["user"]["name"], "john", "Parse nested object nested value")
+    assert_equals(result["active"], 1, "Parse nested object boolean")
+end function

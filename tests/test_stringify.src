@@ -1,0 +1,77 @@
+// =============================================================================
+// STRINGIFY TESTS - Test GSON stringify functionality
+// =============================================================================
+// Purpose: Test conversion from GreyScript objects to GSON strings
+// Dependencies: test_framework.src, gson_util.src
+// =============================================================================
+
+test_stringify_primitives = function()
+    print("\n=== Testing Stringify Primitives ===")
+    
+    // Null
+    result = GsonUtil.stringify(null)
+    assert_equals(result, "null", "Stringify null")
+    
+    // Numbers
+    result = GsonUtil.stringify(42)
+    assert_equals(result, "42", "Stringify number")
+    
+    result = GsonUtil.stringify(-123)
+    assert_equals(result, "-123", "Stringify negative number")
+    
+    // Strings
+    result = GsonUtil.stringify("hello")
+    assert_equals(result, "'hello'", "Stringify simple string")
+    
+    result = GsonUtil.stringify("")
+    assert_equals(result, "''", "Stringify empty string")
+    
+    // String with quotes
+    result = GsonUtil.stringify("say 'hello'")
+    assert_equals(result, "'say \'hello\''", "Stringify string with quotes")
+end function
+
+test_stringify_arrays = function()
+    print("\n=== Testing Stringify Arrays ===")
+    
+    // Empty array
+    result = GsonUtil.stringify([])
+    assert_equals(result, "[]", "Stringify empty array")
+    
+    // Simple array
+    result = GsonUtil.stringify([1, 2, 3])
+    newline = char(10)
+    expected = "[" + newline + "    1," + newline + "    2," + newline + "    3" + newline + "]"
+    assert_equals(result, expected, "Stringify simple array")
+    
+    // Mixed array
+    result = GsonUtil.stringify([1, "hello", null])
+    expected = "[" + newline + "    1," + newline + "    'hello'," + newline + "    null" + newline + "]"
+    assert_equals(result, expected, "Stringify mixed array")
+    
+    // Nested arrays
+    result = GsonUtil.stringify([[1, 2], [3, 4]])
+    expected = "[" + newline + "    [" + newline + "        1," + newline + "        2" + newline + "    ]," + newline + "    [" + newline + "        3," + newline + "        4" + newline + "    ]" + newline + "]"
+    assert_equals(result, expected, "Stringify nested arrays")
+end function
+
+test_stringify_objects = function()
+    print("\n=== Testing Stringify Objects ===")
+    
+    // Empty object
+    result = GsonUtil.stringify({})
+    assert_equals(result, "{}", "Stringify empty object")
+    
+    // Simple object
+    obj = {"name": "test", "value": 42}
+    result = GsonUtil.stringify(obj)
+    // Note: order might vary, so we check if it contains expected parts
+    contains_name = result.indexOf("'name': 'test'") != null
+    contains_value = result.indexOf("'value': 42") != null
+    assert(contains_name and contains_value, "Stringify simple object")
+    
+    // Nested object
+    nested = {"user": {"name": "john", "age": 30}, "active": true}
+    result = GsonUtil.stringify(nested)
+    assert(result.indexOf("'user'") != null, "Stringify nested object")
+end function

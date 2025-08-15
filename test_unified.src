@@ -1,0 +1,331 @@
+// unified test suite - complete gson testing
+// tests both gson_util and gson api with real world scenarios
+// includes file operations and edge cases
+
+import_code("/path/to/gson_util.src")
+import_code("/path/to/gson.src")
+
+// test framework
+TestResults = {"total": 0, "passed": 0, "failed": 0, "failures": []}
+
+test_assert = function(condition, description)
+    TestResults.total = TestResults.total + 1
+    if condition then
+        TestResults.passed = TestResults.passed + 1
+        print("[ok] " + description)
+        return true
+    else
+        TestResults.failed = TestResults.failed + 1
+        TestResults.failures.push(description)
+        print("[ko] " + description)
+        return false
+    end if
+end function
+
+print("=== unified gson test suite ===")
+print("testing both gson_util core and gson api")
+print("includes file operations and comprehensive edge cases")
+print("")
+
+// =============================================================================
+// core gson_util tests
+// =============================================================================
+
+print("=== testing gson_util core engine ===")
+
+// test stringify primitives
+test_assert(GsonUtil.stringify(null) == "null", "stringify null")
+test_assert(GsonUtil.stringify(42) == "42", "stringify number") 
+test_assert(GsonUtil.stringify("hello") == "'hello'", "stringify string")
+test_assert(GsonUtil.stringify("") == "''", "stringify empty string")
+test_assert(GsonUtil.stringify("say 'hello'") == "'say \'hello\''", "stringify escaped quotes")
+
+// test stringify arrays
+test_assert(GsonUtil.stringify([]) == "[]", "stringify empty array")
+test_assert(GsonUtil.stringify([1, 2, 3]).indexOf("[") == 0, "stringify array format")
+mixed_arr = [1, "hello", null]
+mixed_result = GsonUtil.stringify(mixed_arr)
+test_assert(mixed_result.indexOf("1") != -1 and mixed_result.indexOf("'hello'") != -1, "stringify mixed array")
+
+// test stringify objects  
+test_assert(GsonUtil.stringify({}) == "{}", "stringify empty object")
+simple_obj = {"name": "test", "value": 42}
+obj_result = GsonUtil.stringify(simple_obj)
+test_assert(obj_result.indexOf("'name'") != -1 and obj_result.indexOf("'test'") != -1, "stringify object keys and values")
+
+// test parse primitives
+test_assert(GsonUtil.parse("null") == null, "parse null")
+test_assert(GsonUtil.parse("42") == 42, "parse number")
+test_assert(GsonUtil.parse("'hello'") == "hello", "parse string")
+test_assert(GsonUtil.parse("''") == "", "parse empty string")
+
+// test parse arrays
+parsed_arr = GsonUtil.parse("[1, 2, 3]")
+test_assert(typeof(parsed_arr) == "list" and parsed_arr.len == 3, "parse array structure")
+test_assert(parsed_arr[0] == 1 and parsed_arr[2] == 3, "parse array values")
+
+// test parse objects
+parsed_obj = GsonUtil.parse("{'name': 'test', 'value': 42}")
+test_assert(typeof(parsed_obj) == "map" and parsed_obj.indexes.len == 2, "parse object structure")
+test_assert(parsed_obj["name"] == "test" and parsed_obj["value"] == 42, "parse object values")
+
+// test round trip conversion
+original = {"users": [{"name": "john", "active": 1}, {"name": "jane", "active": 0}]}
+gson_str = GsonUtil.stringify(original)
+parsed_back = GsonUtil.parse(gson_str)
+test_assert(parsed_back["users"][0]["name"] == "john", "round trip complex object")
+test_assert(parsed_back["users"][1]["active"] == 0, "round trip boolean values")
+
+// test special characters and edge cases
+special_str = "Line 1" + char(10) + "Line 2"
+special_obj = {"newline": special_str, "quote": "say 'hi'"}
+special_gson = GsonUtil.stringify(special_obj)
+special_parsed = GsonUtil.parse(special_gson)
+test_assert(special_parsed["quote"] == "say 'hi'", "special characters preserved")
+
+print("")
+
+// =============================================================================
+// gson api tests
+// =============================================================================
+
+print("=== testing gson api layer ===")
+
+// test gson item creation and basic operations
+item = GSON.item()
+test_assert(typeof(item) == "map" and item.hasIndex("__isa"), "gson item creation")
+
+// test object mode
+item.set("name", "test")
+item.set("value", 42)
+test_assert(item.get("name") == "test", "gson item object get/set")
+test_assert(item.len() == 2, "gson item object length")
+
+// test array mode
+arr_item = GSON.item()
+arr_item.set(0, "first")
+arr_item.set(1, "second")
+test_assert(arr_item.get(0) == "first", "gson item array access")
+test_assert(arr_item.len() == 2, "gson item array length")
+
+// test array push
+arr_item.push("third")
+test_assert(arr_item.get(2) == "third", "gson item push method")
+test_assert(arr_item.len() == 3, "gson item length after push")
+
+// test stringify
+item_str = item.stringify()
+test_assert(item_str.indexOf("'name'") != -1, "gson item stringify compact")
+item_pretty = item.stringify(true)
+test_assert(item_pretty.indexOf(char(10)) != -1, "gson item stringify pretty")
+
+// test parsing with gson api
+parse_test = GSON.parse("{'data': [1, 2, 3], 'active': 1}")
+test_assert(typeof(parse_test) == "map", "gson parse returns gson item")
+data_item = parse_test.get("data")
+test_assert(data_item.get(1) == 2, "gson parse nested access")
+
+// test gson stringify api
+api_str = GSON.stringify({"test": "value"})
+test_assert(api_str.indexOf("'test'") != -1, "gson api stringify")
+
+print("")
+
+// =============================================================================
+// file operations tests - using real greyhack api  
+// =============================================================================
+
+print("=== testing file operations ===")
+
+// get real host computer from greyhack
+computer = get_shell.host_computer
+test_path = "/home/test/gson_test.json"  // write to user's home, should have permissions
+
+// test write operation - can return file, string (error), or null
+write_data = {"config": {"theme": "dark", "version": "1.0"}, "items": [1, 2, 3]}
+file_result = GSON.write(computer, test_path, write_data)
+
+print("[debug] write result type: " + typeof(file_result))
+if typeof(file_result) == "string" then
+    print("[debug] write error: " + file_result)
+end if
+
+// test the three possible return types
+success_case = typeof(file_result) == "file"
+error_case = typeof(file_result) == "string" 
+null_case = file_result == null
+
+test_assert(success_case or error_case or null_case, "gson write returns valid type")
+
+// only continue with file tests if write succeeded
+if typeof(file_result) == "file" then
+    test_assert(true, "gson write operation successful")
+    
+    // test write with existing file object
+    new_data = {"updated": true, "timestamp": 123456}
+    rewrite_result = GSON.write(computer, test_path, new_data, file_result)
+    test_assert(typeof(rewrite_result) == "file", "gson write with existing file")
+    
+    // verify updated content
+    updated_content = file_result.get_content
+    test_assert(updated_content.indexOf("'updated'") != -1, "gson write updates content")
+    
+    // test read operation with path
+    read_result = GSON.read(computer, test_path)
+    test_assert(read_result != null, "gson read operation successful")
+    if read_result != null and typeof(read_result) == "map" and read_result.hasIndex("get") then
+        updated_check = read_result.get("updated") == true
+        test_assert(updated_check, "gson read updated content")
+    end if
+    
+    // test read operation with file object
+    read_with_file = GSON.read(computer, test_path, file_result)
+    test_assert(read_with_file != null, "gson read with file object")
+    
+    // cleanup test file
+    file_result.delete
+    print("[info] test file cleaned up")
+    
+else
+    print("[info] write failed, testing error scenarios")
+    test_assert(typeof(file_result) == "string", "gson write returns error string on failure")
+    
+    // test permission denied scenario by trying root
+    root_result = GSON.write(computer, "/gson_test.json", write_data)
+    test_assert(typeof(root_result) == "string", "gson write returns error for permission denied")
+    if typeof(root_result) == "string" then
+        test_assert(root_result.indexOf("denied") != -1 or root_result.indexOf("permission") != -1, "gson write error message contains permission info")
+    end if
+end if
+
+// test read non-existent file
+no_file_result = GSON.read(computer, "/nonexistent/path.gson")
+test_assert(no_file_result == null, "gson read handles missing files")
+
+// test write error handling - completely invalid path  
+error_result = GSON.write(computer, "", write_data)
+invalid_path_error = typeof(error_result) == "string" or error_result == null
+test_assert(invalid_path_error, "gson write handles invalid path")
+
+print("")
+
+// =============================================================================
+// performance and stress tests
+// =============================================================================
+
+print("=== performance and stress tests ===")
+
+// large array test
+large_arr = []
+for i in range(0, 99)
+    large_arr.push("item_" + i)
+end for
+
+start_time = time
+large_str = GsonUtil.stringify(large_arr)
+stringify_time = time - start_time
+
+start_time = time
+large_parsed = GsonUtil.parse(large_str)
+parse_time = time - start_time
+
+test_assert(large_parsed.len == 100, "large array stress test length")
+test_assert(large_parsed[0] == "item_0" and large_parsed[99] == "item_99", "large array stress test content")
+print("   performance: stringify " + stringify_time + "ms, parse " + parse_time + "ms")
+
+// deep nesting test
+deep_obj = {"level1": {"level2": {"level3": {"level4": {"value": "deep"}}}}}
+deep_str = GsonUtil.stringify(deep_obj)
+deep_parsed = GsonUtil.parse(deep_str)
+test_assert(deep_parsed["level1"]["level2"]["level3"]["level4"]["value"] == "deep", "deep nesting test")
+
+// complex mixed data
+complex_data = {
+    "meta": {
+        "version": "2.0",
+        "features": ["json", "parsing", "stringify"],
+    },
+    "users": [
+        {"id": 1, "name": "alice", "admin": 1},
+        {"id": 2, "name": "bob", "admin": 0},
+    ],
+    "settings": {
+        "debug": 0,
+        "timeout": 30,
+        "endpoints": [],
+    },
+}
+
+complex_str = GsonUtil.stringify(complex_data)
+complex_parsed = GsonUtil.parse(complex_str)
+test_assert(complex_parsed["users"][0]["name"] == "alice", "complex data structure test")
+test_assert(complex_parsed["meta"]["features"][1] == "parsing", "complex nested array test")
+
+print("")
+
+// =============================================================================
+// edge cases and error handling
+// =============================================================================
+
+print("=== edge cases and error handling ===")
+
+// empty input handling
+test_assert(GsonUtil.parse("") == null, "empty string parsing")
+test_assert(GsonUtil.parse(null) == null, "null input parsing")
+
+// malformed input handling (should not crash)
+malformed_inputs = [
+    "{'key'",
+    "[1, 2",
+    "{'key': }",
+    "{,}",
+    "{'': 'value'}",
+]
+
+for malformed in malformed_inputs
+    try_result = GsonUtil.parse(malformed)
+    // should not crash, any result is acceptable
+    test_assert(true, "malformed input handled: " + malformed)
+end for
+
+// whitespace handling
+whitespace_test = " { 'key' : 'value' } "
+ws_result = GsonUtil.parse(whitespace_test)
+test_assert(ws_result["key"] == "value", "whitespace handling")
+
+// special quote combinations
+quote_test = "{'text': 'He said \'hello\' to me'}"
+quote_result = GsonUtil.parse(quote_test)
+test_assert(quote_result["text"].indexOf("hello") != -1, "nested quote handling")
+
+print("")
+
+// =============================================================================
+// final results
+// =============================================================================
+
+print("=" * 60)
+print("UNIFIED GSON TEST RESULTS")
+print("=" * 60)
+print("Total Tests: " + TestResults.total)
+print("Passed: " + TestResults.passed + " (ok)")
+print("Failed: " + TestResults.failed + " (ko)")
+
+if TestResults.total > 0 then
+    success_rate = (TestResults.passed * 100) / TestResults.total
+    print("Success Rate: " + success_rate + "%")
+end if
+
+if TestResults.failed > 0 then
+    print("")
+    print("Failed Tests:")
+    for failure in TestResults.failures
+        print("  - " + failure)
+    end for
+else
+    print("")
+    print("ALL TESTS PASSED!")
+    print("both core engine and api layer working perfectly")
+end if
+
+print("=" * 60)

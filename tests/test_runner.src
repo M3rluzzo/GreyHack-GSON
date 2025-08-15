@@ -1,0 +1,189 @@
+// gson test runner
+// runs the entire test suite in one go
+// usage: greybel execute test_runner.src
+// dependencies: all the test modules in /tests/
+
+import_code("gson_util")
+
+// grab the test framework
+import_code("tests/test_framework.src")
+
+// import all test modules  
+import_code("tests/test_stringify.src")
+import_code("tests/test_parse.src")
+import_code("tests/test_gson_features.src")
+import_code("tests/test_edge_cases.src")
+import_code("tests/test_error_handling.src")
+import_code("tests/test_performance.src")
+import_code("tests/test_advanced_edge_cases.src")
+
+// main test runner
+// =============================================================================
+run_all_tests = function()
+    print("=== GSON TEST SUITE ===")
+    print("testing the hell out of this gson lib")
+    print("(single quotes, numeric bools, you know the drill)")
+    print("")
+    
+    start_time = time
+    reset_test_results()
+    
+    // Run all test categories
+    test_stringify_primitives()
+    test_stringify_arrays()
+    test_stringify_objects()
+    
+    test_parse_primitives()
+    test_parse_arrays()
+    test_parse_objects()
+    
+    test_gson_features()
+    test_json_vs_gson_differences()
+    
+    test_edge_cases()
+    test_complex_objects()
+    test_round_trip()
+    
+    test_error_handling()
+    test_malformed_input()
+    
+    test_performance()
+    test_deep_nesting()
+    
+    run_advanced_edge_case_tests()
+    
+    end_time = time
+    total_time = end_time - start_time
+    
+    // show final results
+    print("")
+    print("=" * 50)
+    print("FINAL RESULTS")
+    print("=" * 50)
+    print("Total Tests: " + TestResults.total)
+    print("Passed: " + TestResults.passed + " (ok)")
+    print("Failed: " + TestResults.failed + " (KO)")
+    
+    if TestResults.total > 0 then
+        success_rate = (TestResults.passed * 100) / TestResults.total
+        print("Success Rate: " + success_rate + "%")
+    end if
+    
+    print("Total Time: " + total_time + "ms")
+    
+    if TestResults.failed > 0 then
+        print("")
+        print("Failed Tests:")
+        for failure in TestResults.failures
+            print("  - " + failure)
+        end for
+        print("")
+    else
+        print("")
+        print("ALL TESTS PASSED! Ship it!")
+        print("GSON module ready for the wild")
+        print("Nice work, time for a coffee break")
+    end if
+    
+    print("="*64)
+    return TestResults.failed == 0
+end function
+
+// category specific test runners
+// =============================================================================
+run_stringify_tests = function()
+    print("=== STRINGIFY TESTS ===\n")
+    reset_test_results()
+    test_stringify_primitives()
+    test_stringify_arrays()
+    test_stringify_objects()
+    print_test_results()
+end function
+
+run_parse_tests = function()
+    print("=== PARSE TESTS ===\n")
+    reset_test_results()
+    test_parse_primitives()
+    test_parse_arrays()
+    test_parse_objects()
+    print_test_results()
+end function
+
+run_gson_tests = function()
+    print("=== GSON FEATURE TESTS ===\n")
+    reset_test_results()
+    test_gson_features()
+    test_json_vs_gson_differences()
+    print_test_results()
+end function
+
+run_edge_tests = function()
+    print("=== EDGE CASE TESTS ===\n")
+    reset_test_results()
+    test_edge_cases()
+    test_complex_objects()
+    test_round_trip()
+    print_test_results()
+end function
+
+run_error_tests = function()
+    print("=== ERROR HANDLING TESTS ===\n")
+    reset_test_results()
+    test_error_handling()
+    test_malformed_input()
+    print_test_results()
+end function
+
+run_performance_tests = function()
+    print("=== PERFORMANCE TESTS ===\n")
+    reset_test_results()
+    test_performance()
+    test_deep_nesting()
+    print_test_results()
+end function
+
+// cli
+// =============================================================================
+show_help = function()
+    print("GSON Test Runner - Usage:")
+    print("  greybel execute test_runner.src [category]")
+    print("")
+    print("Categories:")
+    print("  all         - Run all tests (default)")
+    print("  stringify   - Test stringify functionality")
+    print("  parse       - Test parse functionality") 
+    print("  gson        - Test GSON-specific features")
+    print("  edge        - Test edge cases and complex objects")
+    print("  error       - Test error handling")
+    print("  performance - Test performance with large datasets")
+    print("  help        - Show this help message")
+end function
+
+// main
+// =============================================================================
+if params == null or params.len == 0 then
+    run_all_tests()
+else
+    command = params[0]
+    if command == "stringify" then
+        run_stringify_tests()
+    else if command == "parse" then
+        run_parse_tests()
+    else if command == "gson" then
+        run_gson_tests()
+    else if command == "edge" then
+        run_edge_tests()
+    else if command == "error" then
+        run_error_tests()
+    else if command == "performance" then
+        run_performance_tests()
+    else if command == "help" then
+        show_help()
+    else if command == "all" then
+        run_all_tests()
+    else
+        print("Unknown command: " + command)
+        print("")
+        show_help()
+    end if
+end if

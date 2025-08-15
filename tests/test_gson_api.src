@@ -1,0 +1,29 @@
+import_code("gson")
+
+// test gson api - clean and simple
+print("=== testing gson api ===")
+
+// test parse object - easy targets
+test_obj_str = "{'name': 'test', 'value': 42, 'active': 1}"
+data = GSON.parse(test_obj_str)
+print("Parsed object type: " + typeof(data))
+print("Object name: " + data.get("name"))
+print("Object value: " + data.get("value"))
+
+// test parse array - pack hunting
+test_arr_str = "['hello', 'world', 42]"
+array = GSON.parse(test_arr_str)
+print("Parsed array type: " + typeof(array))
+print("Array length: " + array.len())
+print("Array first item: " + array.get(0))
+
+// test creation and stringify
+item = GSON.item()
+item.set("test", "value")
+item.set("number", 123)
+compact_str = item.stringify()
+pretty_str = item.stringify(true)
+print("Compact: " + compact_str)
+print("Pretty: " + pretty_str)
+
+print("=== tests done ===")

@@ -1,0 +1,292 @@
+// GSON Utility
+GsonUtil = {}
+
+// padding generation - string multiplication
+GsonUtil._generate_padding = function(indent)
+    if locals.indent == 0 then return ""
+    return ("    " * locals.indent)
+end function
+
+// recursive stringify with dispatch
+GsonUtil.stringify = function(obj, indent)
+    if locals.indent == null then locals.indent = 0
+    return self._stringify(locals.obj, locals.indent, self._generate_padding(locals.indent))
+end function
+
+// core recursive stringify engine
+GsonUtil._stringify = function(obj, indent, spaces)
+    if locals.obj == null then return "null"
+    
+    locals.obj_type = typeof(locals.obj)
+    if locals.obj_type == "number" then return "" + locals.obj
+    if locals.obj_type == "string" then return "'" + locals.obj.replace("'", "\'") + "'"
+    if locals.obj_type == "list" then return self._stringify_array(locals.obj, locals.indent, locals.spaces)
+    if locals.obj_type == "map" then return self._stringify_object(locals.obj, locals.indent, locals.spaces)
+    return "null"
+end function
+
+// generic container stringifier - handles both arrays and objects
+GsonUtil._stringify_container = function(container, indent, spaces, is_array, open_char, close_char)
+    if (is_array and container.len == 0) or (not is_array and container.indexes.len == 0) then
+        return open_char + close_char
+    end if
+    
+    locals.next_indent = locals.indent + 1
+    locals.next_spaces = self._generate_padding(locals.next_indent)
+    locals.newline = char(10)
+    
+    locals.parts = []
+    if is_array then
+        for item in container
+            locals.parts.push(locals.next_spaces + self._stringify(item, locals.next_indent, locals.next_spaces))
+        end for
+    else
+        for key in container.indexes
+            locals.value_str = self._stringify(container[key], locals.next_indent, locals.next_spaces)
+            locals.parts.push(locals.next_spaces + "'" + key + "': " + locals.value_str)
+        end for
+    end if
+    
+    return open_char + locals.newline + locals.parts.join("," + locals.newline) + locals.newline + locals.spaces + close_char
+end function
+
+// array stringifier
+GsonUtil._stringify_array = function(arr, indent, spaces)
+    return self._stringify_container(locals.arr, locals.indent, locals.spaces, true, "[", "]")
+end function
+
+// object stringifier  
+GsonUtil._stringify_object = function(obj, indent, spaces)
+    return self._stringify_container(locals.obj, locals.indent, locals.spaces, false, "{", "}")
+end function
+
+// recursive parser - single entry point
+GsonUtil.parse = function(gson_string)
+    if gson_string == null or gson_string.len == 0 then return null
+    
+    locals.clean_string = self._strip_whitespace(gson_string)
+    if locals.clean_string.len == 0 then return null
+    
+    locals.result = self._parse(locals.clean_string)
+    return self._deep_unescape(locals.result)
+end function
+
+// recursive whitespace stripper with double-escape handling
+GsonUtil._strip_whitespace = function(s)
+    if s == null then return ""
+    
+    locals.result = ""
+    locals.in_quote = false
+    locals.i = 0
+    
+    while locals.i < s.len
+        locals._char = s[locals.i]
+        
+        if locals._char == "\" and locals.i + 2 < s.len and s[locals.i + 1] == "\" and s[locals.i + 2] == "'" then
+            // handle \\' as escaped quote
+            locals.result = locals.result + locals._char + s[locals.i + 1] + s[locals.i + 2]
+            locals.i = locals.i + 3
+        else if locals._char == "\" and locals.i + 1 < s.len then
+            locals.next_char = s[locals.i + 1]
+            locals.result = locals.result + locals._char + locals.next_char
+            locals.i = locals.i + 2
+        else if locals._char == "'" then
+            locals.result = locals.result + locals._char
+            locals.in_quote = (locals.in_quote == false)
+            locals.i = locals.i + 1
+        else if locals.in_quote then
+            locals.result = locals.result + locals._char
+            locals.i = locals.i + 1
+        else if locals._char != " " and locals._char != "	" and locals._char != "
+" and locals._char != char(10) then
+            locals.result = locals.result + locals._char
+            locals.i = locals.i + 1
+        else
+            locals.i = locals.i + 1
+        end if
+    end while
+    
+    return locals.result
+end function
+
+// recursive parser - handles any valid structure
+GsonUtil._parse = function(s)
+    locals.s_clean = s.trim
+    if locals.s_clean.len == 0 then return null
+    
+    locals.first_char = locals.s_clean[0]
+    if locals.first_char == "{" then return self._parse_object(locals.s_clean)
+    if locals.first_char == "[" then return self._parse_array(locals.s_clean)
+    if locals.first_char == "'" then 
+        if locals.s_clean.len >= 2 and locals.s_clean[locals.s_clean.len-1] == "'" then
+            return locals.s_clean[1:locals.s_clean.len-1]
+        end if
+        return locals.s_clean
+    end if
+    
+    if locals.s_clean == "null" then return null
+    if locals.s_clean == "true" then return 1
+    if locals.s_clean == "false" then return 0
+    
+    return val(locals.s_clean)
+end function
+
+// recursive object parser
+GsonUtil._parse_object = function(s)
+    locals.content = s[1:s.len-1].trim
+    if locals.content.len == 0 then return {}
+    
+    locals.result = {}
+    locals.pairs = self._comma_split(locals.content)
+    
+    for pair_str in locals.pairs
+        locals.colon_pos = self._find_structure_colon(pair_str)
+        if locals.colon_pos != null then
+            locals.key_part = pair_str[0:locals.colon_pos].trim
+            if locals.key_part.len >= 2 and locals.key_part[0] == "'" and locals.key_part[locals.key_part.len-1] == "'" then
+                locals.key = locals.key_part[1:locals.key_part.len-1]
+            else
+                locals.key = locals.key_part
+            end if
+            locals.value = self._parse(pair_str[locals.colon_pos+1:].trim)
+            locals.result[locals.key] = locals.value
+        end if
+    end for
+    
+    return locals.result
+end function
+
+// recursive array parser
+GsonUtil._parse_array = function(s)
+    locals.content = s[1:s.len-1].trim
+    if locals.content.len == 0 then return []
+    
+    locals.result = []
+    locals.items = self._comma_split(locals.content)
+    
+    for item_str in locals.items
+        locals.result.push(self._parse(item_str.trim))
+    end for
+    
+    return locals.result
+end function
+
+// comma splitter - respects nesting and quotes
+GsonUtil._comma_split = function(s)
+    locals.parts = []
+    locals.current = ""
+    locals.in_quote = false
+    locals.nesting = 0
+    locals.escape_next = false
+    
+    for i in range(0, s.len - 1)
+        locals._char = s[i]
+        
+        if locals.escape_next then
+            locals.current = locals.current + locals._char
+            locals.escape_next = false
+        else if locals._char == "\" then
+            locals.current = locals.current + locals._char
+            locals.escape_next = true
+        else if locals._char == "'" then
+            locals.current = locals.current + locals._char
+            locals.in_quote = (locals.in_quote == false)
+        else if locals.in_quote == false then
+            if locals._char == "{" or locals._char == "[" then
+                locals.nesting = locals.nesting + 1
+                locals.current = locals.current + locals._char
+            else if locals._char == "}" or locals._char == "]" then
+                locals.nesting = locals.nesting - 1
+                locals.current = locals.current + locals._char
+            else if locals._char == "," and locals.nesting == 0 then
+                if locals.current.len > 0 then locals.parts.push(locals.current)
+                locals.current = ""
+            else
+                locals.current = locals.current + locals._char
+            end if
+        else
+            locals.current = locals.current + locals._char
+        end if
+    end for
+    
+    if locals.current.len > 0 then locals.parts.push(locals.current)
+    return locals.parts
+end function
+
+// colon finder for object parsing
+GsonUtil._find_structure_colon = function(s)
+    locals.in_quote = false
+    locals.escape_next = false
+    
+    for i in range(0, s.len - 1)
+        locals._char = s[i]
+        
+        if locals.escape_next then
+            locals.escape_next = false
+        else if locals._char == "\" then
+            locals.escape_next = true
+        else if locals._char == "'" then
+            locals.in_quote = (locals.in_quote == false)
+        else if locals.in_quote == false and locals._char == ":" then
+            return i
+        end if
+    end for
+    
+    return null
+end function
+
+// recursive deep unescaper - single tree traversal  
+GsonUtil._deep_unescape = function(element)
+    locals.element_type = typeof(element)
+    
+    if locals.element_type == "string" then
+        if element.len == 0 then return ""
+        
+        locals.result = ""
+        locals.i = 0
+        while locals.i < element.len
+            if element[locals.i] == "\" and locals.i + 1 < element.len then
+                locals.next_char = element[locals.i + 1]
+                if locals.next_char == "\" then
+                    if locals.i + 2 < element.len and element[locals.i + 2] == "'" then
+                        locals.result = locals.result + "'"
+                        locals.i = locals.i + 3
+                    else
+                        locals.result = locals.result + "\"
+                        locals.i = locals.i + 2
+                    end if
+                else if locals.next_char == "'" then
+                    locals.result = locals.result + "'"
+                    locals.i = locals.i + 2
+                else
+                    locals.result = locals.result + locals.next_char
+                    locals.i = locals.i + 2
+                end if
+            else
+                locals.result = locals.result + element[locals.i]
+                locals.i = locals.i + 1
+            end if
+        end while
+        return locals.result
+    
+    else if locals.element_type == "list" then
+        locals.cleaned = []
+        for item in element
+            locals.cleaned.push(self._deep_unescape(item))
+        end for
+        return locals.cleaned
+    
+    else if locals.element_type == "map" then
+        locals.cleaned = {}
+        for key in element.indexes
+            locals.clean_key = self._deep_unescape(key)
+            locals.clean_value = self._deep_unescape(element[key])
+            locals.cleaned[locals.clean_key] = locals.clean_value
+        end for
+        return locals.cleaned
+    
+    else
+        return element
+    end if
+end function
+// module.exports = GsonUtil < do not insert here

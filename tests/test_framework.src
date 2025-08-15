@@ -1,0 +1,68 @@
+// =============================================================================
+// TEST FRAMEWORK - Core testing utilities
+// =============================================================================
+// Purpose: Shared assertion functions and test result tracking
+// Used by: All test modules
+// =============================================================================
+
+// Test results tracking
+TestResults = {
+    "total": 0,
+    "passed": 0,
+    "failed": 0,
+    "failures": []
+}
+
+// =============================================================================
+// ASSERTION FUNCTIONS
+// =============================================================================
+assert = function(condition, test_name)
+    TestResults.total = TestResults.total + 1
+    
+    if condition then
+        TestResults.passed = TestResults.passed + 1
+        print("[ok] " + test_name)
+    else
+        TestResults.failed = TestResults.failed + 1
+        TestResults.failures.push(test_name)
+        print("[ko] " + test_name)
+    end if
+end function
+
+assert_equals = function(actual, expected, test_name)
+    // Normalize whitespace for comparison
+    actual_clean = str(actual).replace("    ", "    ")  // Ensure consistent spacing
+    expected_clean = str(expected).replace("    ", "    ")
+    
+    condition = (actual_clean == expected_clean)
+    assert(condition, test_name + " (got: " + str(actual) + ", expected: " + str(expected) + ")")
+end function
+
+// =============================================================================
+// RESULT REPORTING
+// =============================================================================
+print_test_results = function()
+    print("\n" + "="*64)
+    print("                        TEST RESULTS")
+    print("="*64)
+    print("Total Tests: " + TestResults.total)
+    print("Passed: " + TestResults.passed + " (ok)")
+    print("Failed: " + TestResults.failed + " (ko)")
+    print("Success Rate: " + ((TestResults.passed * 100) / TestResults.total) + "%")
+    
+    if TestResults.failed > 0 then
+        print("\nFailed Tests:")
+        for failure in TestResults.failures
+            print("  • " + failure)
+        end for
+    end if
+    
+    return TestResults.failed == 0
+end function
+
+reset_test_results = function()
+    TestResults.total = 0
+    TestResults.passed = 0
+    TestResults.failed = 0
+    TestResults.failures = []
+end function

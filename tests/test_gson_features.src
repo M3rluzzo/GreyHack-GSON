@@ -1,0 +1,58 @@
+// =============================================================================
+// GSON FEATURES TESTS - Test GSON-specific functionality vs JSON
+// =============================================================================
+// Purpose: Test features that make GSON different from standard JSON
+// Dependencies: test_framework.src, gson_util.src
+// =============================================================================
+
+test_gson_features = function()
+    print("\n=== Testing GSON-Specific Features ===")
+    
+    // Single quotes for strings (output format)
+    obj = {"name": "test", "type": "GSON"}
+    result = GsonUtil.stringify(obj)
+    assert(result.indexOf("'name'") != null, "Uses single quotes for keys")
+    assert(result.indexOf("'test'") != null, "Uses single quotes for string values")
+    
+    // Numeric booleans (GreyScript style: true=1, false=0)
+    obj = {"active": 1, "disabled": 0}  // true/false in GreyScript
+    result = GsonUtil.stringify(obj)
+    assert(result.indexOf("'active': 1") != null, "Numeric true (1)")
+    assert(result.indexOf("'disabled': 0") != null, "Numeric false (0)")
+    
+    // Parse single quotes back correctly
+    gson_string = "{'framework': 'PIP-B0II', 'version': '2.1'}"
+    parsed = GsonUtil.parse(gson_string)
+    if parsed != null then
+        assert_equals(parsed.framework, "PIP-B0II", "Parse single-quoted string")
+        assert_equals(parsed.version, "2.1", "Parse single-quoted version")
+    else
+        assert(false, "Failed to parse GSON string")
+    end if
+end function
+
+test_json_vs_gson_differences = function()
+    print("\n=== Testing JSON vs GSON Differences ===")
+    
+    // This is proper GSON format (recommended for GreyScript)
+    gson_style = "{'name': 'test', 'active': 1}"
+    parsed_gson = GsonUtil.parse(gson_style)
+    
+    if parsed_gson != null then
+        assert_equals(parsed_gson.name, "test", "GSON string parsing")
+        assert_equals(parsed_gson.active, 1, "GSON numeric boolean")
+    else
+        assert(false, "Failed to parse GSON format")
+    end if
+    
+    // Stringify should always produce GSON format (single quotes)
+    obj = {"language": "GreyScript", "compatible": 1}
+    result = GsonUtil.stringify(obj)
+    assert(result.indexOf("'language'") != null, "Always outputs single quotes")
+    assert(result.indexOf("'GreyScript'") != null, "Single quotes for all strings")
+    
+    // Demonstrate the difference
+    print("  [INFO] GreyScript code: obj = {""key"": ""value""}")
+    print("  [INFO] GSON output: " + GsonUtil.stringify({"key": "value"}))
+    print("  [INFO] This shows GSON adapts to GreyScript's needs")
+end function
