@@ -121,9 +121,9 @@ GSONItemProto._get_raw = function()
     end if
 end function
 
-GSONItem = {
-	"__isa": new GSONItemProto,
-	"_data": {},
-	"_array_data": [],
-	"_is_array": false,
-}
+GSONItem = {"__isa": GSONItemProto}
+GSONItem._data = {}
+GSONItem._array_data = []
+GSONItem._is_array = false
+
+// to call: new GSONItem
