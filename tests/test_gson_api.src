@@ -18,7 +18,7 @@ print("Array length: " + array.len())
 print("Array first item: " + array.get(0))
 
 // test creation and stringify
-item = GSON.item()
+item = new JSONItem
 item.set("test", "value")
 item.set("number", 123)
 compact_str = item.stringify()

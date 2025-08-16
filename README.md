@@ -36,7 +36,7 @@
 import_code("gson")
 
 // create your data - clean and secure
-config = GSON.item()
+config = new JSONItem
 config.set("callsign", "ThreeDog")
 config.set("frequency", 101.1)
 config.set("signal_strong", 1)  // hell yeah!

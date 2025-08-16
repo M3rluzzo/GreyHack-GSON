@@ -2,134 +2,6 @@
 // handles objects and arrays with same interface
 GSON = {}
 
-// gson item - single type for objects and arrays
-// =============================================================================
-// main prototype - does both objects and arrays
-globals.GSONItemProto = {}
-
-// mode switcher - handles object/array transition
-globals.GSONItemProto._ensure_mode = function(is_array_mode)
-    if self._is_array != is_array_mode then
-        self._is_array = is_array_mode
-        if is_array_mode and not self._array_data then
-            self._array_data = []
-        else if not is_array_mode and not self._data then
-            self._data = {}
-        end if
-    end if
-end function
-
-// helper for numeric key detection
-globals.GSONItemProto._is_numeric_key = function(key)
-    return typeof(key) == "number"
-end function
-
-// getter - works for both objects and arrays
-globals.GSONItemProto.get = function(key)
-    locals.is_numeric = self._is_numeric_key(key)
-    self._ensure_mode(is_numeric)
-    
-    if self._is_array then
-        if key >= 0 and key < self._array_data.len then
-            return self._array_data[key]
-        end if
-        return null
-    else
-        if self._data.hasIndex(key) then
-            return self._data[key]
-        end if
-        return null
-    end if
-end function
-
-// setter - works for both objects and arrays
-globals.GSONItemProto.set = function(key, value) 
-    locals.is_numeric = self._is_numeric_key(key)
-    self._ensure_mode(is_numeric)
-    
-    if self._is_array then
-        // extend array if needed
-        while self._array_data.len <= key
-            self._array_data.push(null)
-        end while
-        self._array_data[key] = value
-    else
-        self._data[key] = value
-    end if
-end function
-
-// array methods - add, length, keys, has
-globals.GSONItemProto.push = function(value)
-    self._ensure_mode(true)
-    self._array_data.push(value)
-end function
-
-globals.GSONItemProto.len = function()
-    if self._is_array then
-        return self._array_data.len
-    else
-        return self._data.indexes.len
-    end if
-end function
-
-globals.GSONItemProto.keys = function()
-    if self._is_array then
-        locals.result = []
-        for i in range(0, self._array_data.len - 1)
-            locals.result.push(i)
-        end for
-        return locals.result
-    end if
-    return self._data.indexes
-end function
-
-globals.GSONItemProto.has = function(key)
-    locals.is_numeric = self._is_numeric_key(key)
-    if self._is_array and is_numeric then
-        return key >= 0 and key < self._array_data.len
-    end if
-    return self._data.hasIndex(key)
-end function
-
-// stringify - converts to gson string
-globals.GSONItemProto.stringify = function(pretty)
-    locals.raw = null
-    if self._is_array then
-        locals.raw = self._array_data
-    else
-        locals.raw = self._data
-    end if
-    
-    locals.indent_param = 0
-    if pretty then locals.indent_param = 0 else locals.indent_param = -1
-    
-    locals.result = GsonUtil.stringify(locals.raw, locals.indent_param)
-    
-    if pretty then
-        return locals.result
-    else
-        return locals.result.replace(char(10), "").replace("    ", "")
-    end if
-end function
-
-// raw data access - for internal use
-globals.GSONItemProto._get_raw = function()
-    if self._is_array then
-        return self._array_data
-    else
-        return self._data
-    end if
-end function
-
-// creates gson item instances
-GSONItem = function()
-    locals.instance = {"__isa": globals.GSONItemProto}
-    locals.instance._data = {}
-    locals.instance._array_data = []
-    locals.instance._is_array = false
-    return locals.instance
-end function
-
 // main api - parse, stringify, file operations
 // =============================================================================
 // parse gson string and return gson item
@@ -143,13 +15,13 @@ end function
 // recursive converter - turns raw data into gson items
 GSON._convert_to_gson_item = function(data)
     if typeof(data) == "map" then
-        locals.item = GSONItem()
+        locals.item = new GSONItem
         for key in data.indexes
             locals.item.set(key, self._convert_to_gson_item(data[key]))
         end for
         return locals.item
     else if typeof(data) == "list" then
-        locals.item = GSONItem()
+        locals.item = new GSONItem
         for i in range(0, data.len - 1)
             locals.item.set(i, self._convert_to_gson_item(data[i]))
         end for
@@ -195,7 +67,7 @@ GSON.read = function(computer, path, file = null)
 
     locals.content = locals.file.get_content
     if locals.content.len == 0 then
-        return GSONItem()
+        return new GSONItem
     end if
 
     return self.parse(locals.content)
@@ -248,11 +120,4 @@ GSON.write = function(computer, path, data, file=null)
 	end if
 
     return locals.file
-end function
-
-// convenience functions
-// =============================================================================
-// create new gson item
-GSON.item = function()
-    return GSONItem()
 end function

@@ -2,9 +2,9 @@
 // tests both gson_util and gson api with real world scenarios
 // includes file operations and edge cases
 
-import_code("gson_util.src")
 import_code("gson_item.src")
 import_code("gson.src")
+import_code("gson_util.src")
 
 // test framework
 TestResults = {"total": 0, "passed": 0, "failed": 0, "failures": []}
@@ -93,7 +93,7 @@ print("")
 print("=== testing gson api layer ===")
 
 // test gson item creation and basic operations
-item = GSON.item()
+item = new GSONItem
 test_assert(typeof(item) == "map" and item.hasIndex("__isa"), "gson item creation")
 
 // test object mode
@@ -103,7 +103,7 @@ test_assert(item.get("name") == "test", "gson item object get/set")
 test_assert(item.len() == 2, "gson item object length")
 
 // test array mode
-arr_item = GSON.item()
+arr_item = new GSONItem
 arr_item.set(0, "first")
 arr_item.set(1, "second")
 test_assert(arr_item.get(0) == "first", "gson item array access")

@@ -1,10 +1,10 @@
 // gson item - single type for objects and arrays
 // =============================================================================
 // main prototype - does both objects and arrays
-GSONItemProto = {}
+GSONItem = {}
 
 // mode switcher - handles object/array transition
-GSONItemProto._ensure_mode = function(is_array_mode)
+GSONItem._ensure_mode = function(is_array_mode)
     if self._is_array != is_array_mode then
         self._is_array = is_array_mode
         if is_array_mode and not self._array_data then
@@ -16,12 +16,12 @@ GSONItemProto._ensure_mode = function(is_array_mode)
 end function
 
 // helper for numeric key detection
-GSONItemProto._is_numeric_key = function(key)
+GSONItem._is_numeric_key = function(key)
     return typeof(key) == "number"
 end function
 
 // getter - works for both objects and arrays
-GSONItemProto.get = function(key)
+GSONItem.get = function(key)
     locals.is_numeric = self._is_numeric_key(key)
     self._ensure_mode(is_numeric)
     
@@ -39,7 +39,7 @@ GSONItemProto.get = function(key)
 end function
 
 // setter - works for both objects and arrays
-GSONItemProto.set = function(key, value) 
+GSONItem.set = function(key, value) 
     locals.is_numeric = self._is_numeric_key(key)
     self._ensure_mode(is_numeric)
     
@@ -55,12 +55,12 @@ GSONItemProto.set = function(key, value)
 end function
 
 // array methods - add, length, keys, has
-GSONItemProto.push = function(value)
+GSONItem.push = function(value)
     self._ensure_mode(true)
     self._array_data.push(value)
 end function
 
-GSONItemProto.len = function()
+GSONItem.len = function()
     if self._is_array then
         return self._array_data.len
     else
@@ -68,7 +68,7 @@ GSONItemProto.len = function()
     end if
 end function
 
-GSONItemProto.keys = function()
+GSONItem.keys = function()
     if self._is_array then
         locals.result = []
         for i in range(0, self._array_data.len - 1)
@@ -79,7 +79,7 @@ GSONItemProto.keys = function()
     return self._data.indexes
 end function
 
-GSONItemProto.has = function(key)
+GSONItem.has = function(key)
     locals.is_numeric = self._is_numeric_key(key)
     if self._is_array and is_numeric then
         return key >= 0 and key < self._array_data.len
@@ -88,7 +88,7 @@ GSONItemProto.has = function(key)
 end function
 
 // stringify - converts to gson string
-GSONItemProto.stringify = function(pretty)
+GSONItem.stringify = function(pretty)
     locals.raw = null
     if self._is_array then
         locals.raw = self._array_data
@@ -109,7 +109,7 @@ GSONItemProto.stringify = function(pretty)
 end function
 
 // raw data access - for internal use
-GSONItemProto._get_raw = function()
+GSONItem._get_raw = function()
     if self._is_array then
         return self._array_data
     else
@@ -117,11 +117,6 @@ GSONItemProto._get_raw = function()
     end if
 end function
 
-// creates gson item instances
-GSONItem = function()
-    locals.instance = {"__isa": GSONItemProto}
-    locals.instance._data = {}
-    locals.instance._array_data = []
-    locals.instance._is_array = false
-    return locals.instance
-end function
+GSONItem._data = {}
+GSONItem._array_data = []
+GSONItem._is_array = false
