@@ -22,9 +22,11 @@ GSON._convert_to_gson_item = function(data)
         return locals.item
     else if typeof(data) == "list" then
         locals.item = new GSONItem
-        for i in range(0, data.len - 1)
-            locals.item.set(i, self._convert_to_gson_item(data[i]))
-        end for
+        if data.len > 0 then
+			for i in range(0, data.len - 1)
+				locals.item.set(i, self._convert_to_gson_item(data[i]))
+			end for
+		end if
         return locals.item
     else
         // for primitives, return them directly
