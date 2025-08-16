@@ -2,8 +2,9 @@
 // tests both gson_util and gson api with real world scenarios
 // includes file operations and edge cases
 
-import_code("/path/to/gson_util.src")
-import_code("/path/to/gson.src")
+import_code("gson_util.src")
+import_code("gson_item.src")
+import_code("gson.src")
 
 // test framework
 TestResults = {"total": 0, "passed": 0, "failed": 0, "failures": []}
