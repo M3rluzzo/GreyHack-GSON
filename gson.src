@@ -1,125 +1,80 @@
-// gson module - json for greyscript
-// handles objects and arrays with same interface
+TypeOf = function(_obj)
+	result = typeof(_obj)
+	if result == "map" and _obj.hasIndex("__isa") and _obj.__isa == GSON_OBJECT then
+		return "gsonobject"
+	end if
+	return result
+end function
+
+// =============================================================================
+// PIP-B0II Framework - Gson (GreyScript Object Notation) Module
+// Enhanced JSON with GreyScript-specific features and single quotes
+// =============================================================================
 GSON = {}
 
 // main api - parse, stringify, file operations
 // =============================================================================
-// parse gson string and return gson item
-GSON.parse = function(gson_string)
-    if gson_string == null or gson_string.len == 0 then return null
-    
-    locals.result = GsonUtil.parse(gson_string)
-    return self._convert_to_gson_item(locals.result)
-end function
+GSON.Parse = function(_gsonString)
+    if _gsonString == null or _gsonString.len == 0 then return null
+    cleanString = GSON_UTIL._StripWhitespace(_gsonString)
+    if cleanString.len == 0 then return null
 
-// recursive converter - turns raw data into gson items
-GSON._convert_to_gson_item = function(data)
-    if typeof(data) == "map" then
-        locals.item = new GSONItem
-        for key in data.indexes
-            locals.item.set(key, self._convert_to_gson_item(data[key]))
-        end for
-        return locals.item
-    else if typeof(data) == "list" then
-        locals.item = new GSONItem
-        if data.len > 0 then
-			for i in range(0, data.len - 1)
-				locals.item.set(i, self._convert_to_gson_item(data[i]))
-			end for
-		end if
-        return locals.item
-    else
-        // for primitives, return them directly
-        return data
-    end if
+	value = GSON_UTIL._Parse(cleanString)
+    return GSON_UTIL._DeepUnescape(value)
 end function
 
 // stringify any data to gson
-GSON.stringify = function(data, pretty)
-    if typeof(data) == "map" and data.hasIndex("stringify") then
-        // it's a gson item
-        return data.stringify(pretty)
-    else
-        if pretty then
-            return GsonUtil.stringify(data)
-        else
-            return GsonUtil.stringify(data, 0).replace(char(10), "").replace("    ", "")
-        end if
+GSON.Stringify = function(_data, _indent = 0)
+	result = self._Stringify(_data, _indent, self._GeneratePadding(_indent))
+	if _indent == 0 then
+		return result.replace(char(10), "").replace("    ", "")
+	end if
+	return result
+end function
+
+GSON._Stringify = function(_obj, _indent, _spaces)
+    if _obj == null then return "null"
+
+    obj_type = TypeOf(_obj)
+	
+    if obj_type == "number" then return "" + _obj
+    if obj_type == "string" then return "'" + _obj.replace("'", "\'") + "'"
+    if obj_type == "list" then return self._StringifyContainer(_obj, _indent, _spaces, true, "[", "]")
+	if obj_type == "gsonobject" or obj_type == "map" then return self._StringifyContainer(_obj, _indent, _spaces, false, "{", "}")
+	exit("Something went very wrong..")
+    return "nope"
+end function
+
+GSON._StringifyContainer = function(_container, _indent, _spaces, _isArray, _openChar, _closeChar)
+    if (_isArray and _container.len == 0) or (not _isArray and _container.indexes.len == 0) then
+        return _openChar + _closeChar
     end if
+
+    nextIndent = _indent + 1
+    nextSpaces = self._GeneratePadding(nextIndent)
+    newline = char(10)
+
+    parts = []
+    if _isArray then
+        for item in _container
+            parts.push(nextSpaces + self._Stringify(item, nextIndent, nextSpaces))
+        end for
+    else
+        for key in _container.indexes
+            value_str = self._Stringify(_container[key], nextIndent, nextSpaces)
+            parts.push(nextSpaces + "'" + key + "': " + value_str)
+        end for
+    end if
+
+    return _openChar + newline + parts.join("," + newline) + newline + _spaces + _closeChar
+end function
+
+// padding generation - string multiplication
+GSON._GeneratePadding = function(_indent)
+    if _indent == 0 then return ""
+    return ("    " * _indent)
 end function
 
 // file operations
 // =============================================================================
-// finds last occurrence of character
-GSON._last_index_of = function(s, char, pos)
-    if pos == null then pos = s.len - 1
-    if pos < 0 then return null
-    if s[pos] == char then return pos
-    return self._last_index_of(s, char, pos - 1)
-end function
-
-// read gson from file
-GSON.read = function(computer, path, file = null)
-    if locals.file == null then
-		locals.file = locals.computer.File(locals.path)
-		if locals.file == null then
-			return null
-		end if
-	end if
-
-    locals.content = locals.file.get_content
-    if locals.content.len == 0 then
-        return new GSONItem
-    end if
-
-    return self.parse(locals.content)
-end function
-
-// write gson to file with formatting, can return File or error string
-GSON.write = function(computer, path, data, file=null)
-	// extract raw data if it's a gson item
-    locals.raw_data = locals.data
-    if typeof(data) == "map" and locals.data.hasIndex("_get_raw") then
-        locals.raw_data = data._get_raw()
-    end if
-
-    // create directory structure if needed
-	if locals.file == null then
-		locals.idx = self._last_index_of(locals.path, "/")
-		if locals.idx != null then
-			// handle root directory case properly
-			if locals.idx == 0 then
-				locals.dir = "/"
-				locals.name = locals.path[1:]
-			else
-				locals.dir = locals.path[0:locals.idx]
-				locals.name = locals.path[locals.idx + 1:]
-			end if
-
-			if not locals.computer.File(locals.path) then
-				locals.file = locals.computer.touch(locals.dir, locals.name)
-				if typeof(locals.file) == "string" then
-					return locals.file  // return error string from touch
-				end if
-				locals.file = locals.computer.File(locals.path)
-			else
-				locals.file = locals.computer.File(locals.path)
-			end if
-		else
-			// no slash found, assume current directory
-			locals.file = locals.computer.touch(".", locals.path)
-			if typeof(locals.file) == "string" then
-				return locals.file  // return error string
-			end if
-			locals.file = locals.computer.File(locals.path)
-		end if
-	end if
-
-	if typeof(locals.file) == "file"  then
-		// write with pretty formatting for files
-		locals.content = GsonUtil.stringify(locals.raw_data)
-		locals.file.set_content(locals.content)
-	end if
-
-    return locals.file
-end function
+// To be Remimplemented
